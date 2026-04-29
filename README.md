@@ -65,10 +65,10 @@ This script creates the file `/etc/udisks2/mount_options.conf` with:
 defaults=dirsync
 
 [ntfs]
-defaults=dirsync,uid=$UID,gid=$GID,umask=0077
+defaults=dirsync,uid=0,gid=0,umask=0077
 
 [vfat]
-defaults=dirsync,uid=$UID,gid=$GID,umask=0077
+defaults=dirsync,uid=0,gid=0,umask=0077
 ```
 
 **`dirsync`** tells the kernel to write directory metadata (file names, sizes, timestamps) directly to the device, while file contents are still written asynchronously through RAM. This gives you strong protection against file system corruption after an unsafe unplug, without the severe speed penalty of full `sync`.
