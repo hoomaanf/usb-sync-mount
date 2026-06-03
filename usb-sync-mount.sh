@@ -11,10 +11,6 @@ CONFIG_FILE="/etc/udisks2/mount_options.conf"
 # Define the configuration content
 CONFIG_CONTENT='[defaults]
 # Use sync for all mount operations by default
-# This ensures data is written immediately to the device.
-# Be aware this might slightly slow down operations with many small files.
-# For example, sync is generally recommended for SD cards and USB drives
-# to prevent data corruption when unplugging.
 defaults=dirsync
 
 [ntfs]
@@ -22,6 +18,51 @@ defaults=dirsync,uid=0,gid=0,umask=0077
 
 [vfat]
 defaults=dirsync,uid=0,gid=0,umask=0077
+
+[exfat]
+defaults=dirsync,uid=0,gid=0,umask=0077
+
+[ext2]
+defaults=dirsync
+
+[ext3]
+defaults=dirsync
+
+[ext4]
+defaults=dirsync
+
+[btrfs]
+defaults=dirsync
+
+[xfs]
+defaults=dirsync
+
+[f2fs]
+defaults=dirsync
+
+[udf]
+defaults=dirsync
+
+[iso9660]
+defaults=ro
+
+[hfsplus]
+defaults=dirsync,uid=0,gid=0,umask=0077
+
+[hfs]
+defaults=dirsync,uid=0,gid=0,umask=0077
+
+[minix]
+defaults=dirsync
+
+[nilfs2]
+defaults=dirsync
+
+[jfs]
+defaults=dirsync
+
+[reiserfs]
+defaults=dirsync
 '
 
 # Ensure the configuration directory exists
