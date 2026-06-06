@@ -1,4 +1,3 @@
-```markdown
 # 🔒 USB Sync Mount – Disable Write Cache for External Drives (udisks2)
 
 **Prevent data loss and file system corruption on USB drives with a single script.**
