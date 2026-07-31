@@ -1,89 +1,58 @@
 #!/bin/bash
-echo "Creating or updating udisks2 configuration file for all removable drives..."
 
-CONFIG_FILE="/etc/udisks2/mount_options.conf"
+echo "Installing simple & reliable USB write-cache limiter (no dependencies)..."
 
-CONFIG_CONTENT='[defaults]
-defaults=
+# Create helper script
+HELPER_SCRIPT="/usr/local/bin/usb-cache-limit.sh"
 
-# =============================================
-# Removable drives - Mount with sync mode (accurate copy speed like Windows)
-# =============================================
-[ntfs]
-defaults=uid=0,gid=0,umask=0077,sync
+sudo tee "$HELPER_SCRIPT" > /dev/null << 'EOF'
+#!/bin/bash
 
-[vfat]
-defaults=uid=0,gid=0,umask=0077,sync,flush
+DEVICE="$1"
+SPEED="$2"
 
-[exfat]
-defaults=uid=0,gid=0,umask=0077,sync
+# Set cache size based on USB speed (without bc)
+case "$SPEED" in
+    12)      # USB 1.1
+        MAX_BYTES=4194304      # 4 MB
+        ;;
+    480)     # USB 2.0
+        MAX_BYTES=16777216     # 16 MB
+        ;;
+    5000)    # USB 3.0 / 3.1 Gen1
+        MAX_BYTES=33554432     # 32 MB
+        ;;
+    10000)   # USB 3.1 Gen2 / 3.2
+        MAX_BYTES=50331648     # 48 MB
+        ;;
+    *)       # Unknown or fallback
+        MAX_BYTES=33554432     # 32 MB
+        ;;
+esac
 
-[ext2]
-defaults=sync
+# Apply the limits
+echo 1 > /sys/block/$DEVICE/bdi/strict_limit 2>/dev/null
+echo $MAX_BYTES > /sys/block/$DEVICE/bdi/max_bytes 2>/dev/null
+EOF
 
-[ext3]
-defaults=sync
+sudo chmod +x "$HELPER_SCRIPT"
 
-[ext4]
-defaults=sync
+# Create udev rule
+RULE_FILE="/etc/udev/rules.d/99-usb-cache-limit.rules"
 
-[btrfs]
-defaults=sync
+sudo tee "$RULE_FILE" > /dev/null << EOF
+# USB write cache limiter (no dependencies)
+ACTION=="add|change", KERNEL=="sd[a-z]", ENV{ID_BUS}=="usb", ENV{DEVTYPE}=="disk", ATTRS{speed}=="?*", RUN+="/usr/local/bin/usb-cache-limit.sh %k %s{speed}"
+ACTION=="add|change", KERNEL=="sd[a-z]", ENV{ID_BUS}=="usb", ENV{DEVTYPE}=="disk", ATTRS{speed}=="", RUN+="/usr/local/bin/usb-cache-limit.sh %k 5000"
+EOF
 
-[xfs]
-defaults=sync
+# Reload udev
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 
-[f2fs]
-defaults=sync
-
-[udf]
-defaults=sync
-
-[iso9660]
-defaults=ro,sync
-
-[hfsplus]
-defaults=uid=0,gid=0,umask=0077,sync
-
-[hfs]
-defaults=uid=0,gid=0,umask=0077,sync
-
-[minix]
-defaults=sync
-
-[nilfs2]
-defaults=sync
-
-[jfs]
-defaults=sync
-
-[reiserfs]
-defaults=sync
-'
-
-sudo mkdir -p "$(dirname "$CONFIG_FILE")"
-echo "$CONFIG_CONTENT" | sudo tee "$CONFIG_FILE" > /dev/null
-
-if [ $? -eq 0 ]; then
-    echo "✅ Configuration file successfully saved to $CONFIG_FILE"
-else
-    echo "❌ Error saving configuration file."
-    exit 1
-fi
-
-echo "Restarting udisks2 service..."
-sudo systemctl restart udisks2.service
-
-if [ $? -eq 0 ]; then
-    echo "✅ udisks2 service restarted successfully."
-else
-    echo "❌ Error restarting udisks2 service."
-    exit 1
-fi
-
-echo "=================================================="
-echo "🎉 Done! All external drives (HDD, USB flash, SD cards, etc.)"
-echo "will now be mounted in sync mode (accurate real-time copy speed like Windows)."
-echo "Please safely eject and reconnect your external drive."
-echo "=================================================="
-exit 0
+echo ""
+echo "======================================================"
+echo "✅ Done! (No extra packages required)"
+echo ""
+echo "Please eject and reconnect your USB / Ventoy."
+echo "======================================================"
